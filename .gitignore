@@ -1,0 +1,28 @@
+# Ignore all dot files except
+.*
+!.editorconfig
+!.gitattributes
+!.gitignore
+
+
+######################
+# Maven
+######################
+target/
+pom.xml.bak
+pom.xml.versionsBackup
+
+######################
+# Maven Wrapper
+######################
+!.mvn
+
+######################
+# Intellij Idea
+######################
+*.iml
+
+######################
+# Visual Studio Code
+######################
+.vscode/
