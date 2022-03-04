@@ -1,0 +1,17 @@
+# ===================================================================
+# PLEASE COMPLETE ALL CONFIGURATIONS BEFORE STARTING THE WORKER
+# ===================================================================
+
+application:
+  # NOTE that the endpoint is the KUFLOW LIVE environment for
+  # the KUFLOW REST API.
+  endpoint: https://api.kuflow.com/v1
+
+  # ID of the APPLICATION configured in KUFLOW.
+  # Get it in "Application details" in the Kuflow APP.
+  application-id: FILL_ME
+
+  # TOKEN of the APPLICATION configured in KUFLOW.
+  # Get it in "Application details" in the Kuflow APP.
+  token: FILL_ME
+

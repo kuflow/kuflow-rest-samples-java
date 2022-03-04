@@ -4,6 +4,10 @@
 !.gitattributes
 !.gitignore
 
+######################
+# Application
+######################
+*-local.yaml
 
 ######################
 # Maven
