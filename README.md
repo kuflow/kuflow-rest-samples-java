@@ -1,4 +1,4 @@
-[![GitHub](https://img.shields.io/github/license/kuflow/kuflow-rest-samples-java?label=License)](https://github.com/kuflow/kuflow-rest-samples-java/blob/main/LICENSE)
+[![GitHub](https://img.shields.io/github/license/kuflow/kuflow-rest-samples-java?label=License)](LICENSE)
 
 # KuFlow REST Samples Java
 
