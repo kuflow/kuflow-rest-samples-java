@@ -9,9 +9,11 @@ package com.kuflow.rest.samples.worker.loan;
 import com.kuflow.rest.client.controller.ProcessApi;
 import com.kuflow.rest.client.controller.TaskApi;
 import com.kuflow.rest.client.net.Webhook;
+import com.kuflow.rest.client.resource.AssignTaskCommandResource;
 import com.kuflow.rest.client.resource.ElementDefinitionTypeResource;
 import com.kuflow.rest.client.resource.ElementValueDecisionResource;
 import com.kuflow.rest.client.resource.ElementValueFieldResource;
+import com.kuflow.rest.client.resource.ProcessResource;
 import com.kuflow.rest.client.resource.ProcessStateResource;
 import com.kuflow.rest.client.resource.TaskResource;
 import com.kuflow.rest.client.resource.TaskStateResource;
@@ -100,11 +102,16 @@ public class SampleRestWorkerLoanController {
 
         ElementValueDecisionResource authorizedField = this.retrieveElementDecision(taskApproveLoan, "authorized");
 
+        TaskResource taskNotification;
         if (authorizedField.getCode().equals("OK")) {
-            this.createTaskNotificationGranted(data);
+            taskNotification = this.createTaskNotificationGranted(data);
         } else {
-            this.createTaskNotificationRejection(data);
+            taskNotification = this.createTaskNotificationRejection(data);
         }
+
+        ProcessResource process = this.processApi.retrieveProcess(data.getProcessId());
+
+        this.assignTaskToProcessInitiator(taskNotification, process);
 
         this.processApi.actionsCompleteProcess(data.getProcessId());
     }
@@ -120,7 +127,11 @@ public class SampleRestWorkerLoanController {
         if (amountEUR.compareTo(BigDecimal.valueOf(5000)) > 0) {
             this.createTaskApproveLoan(taskLoanApplication, amountEUR);
         } else {
-            this.createTaskNotificationGranted(data);
+            TaskResource taskNotification = this.createTaskNotificationGranted(data);
+
+            ProcessResource process = this.processApi.retrieveProcess(data.getProcessId());
+
+            this.assignTaskToProcessInitiator(taskNotification, process);
 
             this.processApi.actionsCompleteProcess(data.getProcessId());
         }
@@ -163,7 +174,7 @@ public class SampleRestWorkerLoanController {
         this.taskApi.createTask(taskApproveLoan);
     }
 
-    private void createTaskNotificationRejection(WebhookEventTaskStateChangedDataResource data) {
+    private TaskResource createTaskNotificationRejection(WebhookEventTaskStateChangedDataResource data) {
         TasksDefinitionSummaryResource tasksDefinition = new TasksDefinitionSummaryResource();
         tasksDefinition.setCode(TASK_NOTIFICATION_REJECTION);
 
@@ -171,10 +182,10 @@ public class SampleRestWorkerLoanController {
         taskNotificationRejection.setProcessId(data.getProcessId());
         taskNotificationRejection.setTaskDefinition(tasksDefinition);
 
-        this.taskApi.createTask(taskNotificationRejection);
+        return this.taskApi.createTask(taskNotificationRejection);
     }
 
-    private void createTaskNotificationGranted(WebhookEventTaskStateChangedDataResource data) {
+    private TaskResource createTaskNotificationGranted(WebhookEventTaskStateChangedDataResource data) {
         TasksDefinitionSummaryResource tasksDefinition = new TasksDefinitionSummaryResource();
         tasksDefinition.setCode(TASK_NOTIFICATION_GRANTED);
 
@@ -182,7 +193,14 @@ public class SampleRestWorkerLoanController {
         taskNotificationGranted.setProcessId(data.getProcessId());
         taskNotificationGranted.setTaskDefinition(tasksDefinition);
 
-        this.taskApi.createTask(taskNotificationGranted);
+        return this.taskApi.createTask(taskNotificationGranted);
+    }
+
+    private void assignTaskToProcessInitiator(TaskResource taskNotification, ProcessResource process) {
+        AssignTaskCommandResource command = new AssignTaskCommandResource();
+        command.setPrincipalId(process.getInitiator().getId());
+
+        this.taskApi.actionsAssignTask(taskNotification.getId(), command);
     }
 
     private ElementValueDecisionResource retrieveElementDecision(TaskResource taskLoanApplication, String code) {
