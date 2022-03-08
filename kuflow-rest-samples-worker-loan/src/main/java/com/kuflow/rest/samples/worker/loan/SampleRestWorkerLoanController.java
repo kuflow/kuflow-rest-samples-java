@@ -126,6 +126,17 @@ public class SampleRestWorkerLoanController {
         }
     }
 
+    private void createTaskLoanApplication(WebhookEventProcessStateChangedDataResource data) {
+        TasksDefinitionSummaryResource tasksDefinition = new TasksDefinitionSummaryResource();
+        tasksDefinition.setCode(TASK_LOAN_APPLICATION);
+
+        TaskResource task = new TaskResource();
+        task.setProcessId(data.getProcessId());
+        task.setTaskDefinition(tasksDefinition);
+
+        this.taskApi.createTask(task);
+    }
+
     private void createTaskApproveLoan(TaskResource taskLoanApplication, BigDecimal amountEUR) {
         ElementValueFieldResource firstNameField = this.retrieveElementValue(taskLoanApplication, "firstName");
         ElementValueFieldResource lastNameField = this.retrieveElementValue(taskLoanApplication, "lastName");
@@ -152,25 +163,6 @@ public class SampleRestWorkerLoanController {
         this.taskApi.createTask(taskApproveLoan);
     }
 
-    private ElementValueDecisionResource retrieveElementDecision(TaskResource taskLoanApplication, String code) {
-        return ElementUtils.getSingleValueByCode(taskLoanApplication, code, ElementValueDecisionResource.class);
-    }
-
-    private ElementValueFieldResource retrieveElementValue(TaskResource taskLoanApplication, String code) {
-        return ElementUtils.getSingleValueByCode(taskLoanApplication, code, ElementValueFieldResource.class);
-    }
-
-    private void createTaskLoanApplication(WebhookEventProcessStateChangedDataResource data) {
-        TasksDefinitionSummaryResource tasksDefinition = new TasksDefinitionSummaryResource();
-        tasksDefinition.setCode(TASK_LOAN_APPLICATION);
-
-        TaskResource task = new TaskResource();
-        task.setProcessId(data.getProcessId());
-        task.setTaskDefinition(tasksDefinition);
-
-        this.taskApi.createTask(task);
-    }
-
     private void createTaskNotificationRejection(WebhookEventTaskStateChangedDataResource data) {
         TasksDefinitionSummaryResource tasksDefinition = new TasksDefinitionSummaryResource();
         tasksDefinition.setCode(TASK_NOTIFICATION_REJECTION);
@@ -191,6 +183,14 @@ public class SampleRestWorkerLoanController {
         taskNotificationGranted.setTaskDefinition(tasksDefinition);
 
         this.taskApi.createTask(taskNotificationGranted);
+    }
+
+    private ElementValueDecisionResource retrieveElementDecision(TaskResource taskLoanApplication, String code) {
+        return ElementUtils.getSingleValueByCode(taskLoanApplication, code, ElementValueDecisionResource.class);
+    }
+
+    private ElementValueFieldResource retrieveElementValue(TaskResource taskLoanApplication, String code) {
+        return ElementUtils.getSingleValueByCode(taskLoanApplication, code, ElementValueFieldResource.class);
     }
 
     private BigDecimal convertToEuros(ElementValueDecisionResource currencyField, ElementValueFieldResource amountField) {
