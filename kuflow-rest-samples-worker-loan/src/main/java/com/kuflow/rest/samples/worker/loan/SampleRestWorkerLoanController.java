@@ -10,11 +10,9 @@ import com.kuflow.rest.client.controller.ProcessApi;
 import com.kuflow.rest.client.controller.TaskApi;
 import com.kuflow.rest.client.net.Webhook;
 import com.kuflow.rest.client.resource.AssignTaskCommandResource;
-import com.kuflow.rest.client.resource.ElementDefinitionTypeResource;
-import com.kuflow.rest.client.resource.ElementValueDecisionResource;
-import com.kuflow.rest.client.resource.ElementValueFieldResource;
 import com.kuflow.rest.client.resource.ProcessResource;
 import com.kuflow.rest.client.resource.ProcessStateResource;
+import com.kuflow.rest.client.resource.TaskElementValueWrapperResource;
 import com.kuflow.rest.client.resource.TaskResource;
 import com.kuflow.rest.client.resource.TaskStateResource;
 import com.kuflow.rest.client.resource.TasksDefinitionSummaryResource;
@@ -23,7 +21,6 @@ import com.kuflow.rest.client.resource.WebhookEventProcessStateChangedResource;
 import com.kuflow.rest.client.resource.WebhookEventResource;
 import com.kuflow.rest.client.resource.WebhookEventTaskStateChangedDataResource;
 import com.kuflow.rest.client.resource.WebhookEventTaskStateChangedResource;
-import com.kuflow.rest.client.util.ElementUtils;
 import com.kuflow.rest.samples.worker.loan.util.CastUtils;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -79,9 +76,6 @@ public class SampleRestWorkerLoanController {
 
     private void handleEventProcessStateChanged(WebhookEventProcessStateChangedResource event) {
         WebhookEventProcessStateChangedDataResource data = event.getData();
-        if (ProcessStateResource.CREATED.equals(data.getProcessState())) {
-            this.processApi.actionsStartProcess(data.getProcessId());
-        }
         if (ProcessStateResource.RUNNING.equals(data.getProcessState())) {
             this.createTaskLoanApplication(data);
         }
@@ -100,10 +94,10 @@ public class SampleRestWorkerLoanController {
     private void handleTaskApproveLoan(WebhookEventTaskStateChangedDataResource data) {
         TaskResource taskApproveLoan = this.taskApi.retrieveTask(data.getTaskId());
 
-        ElementValueDecisionResource authorizedField = this.retrieveElementDecision(taskApproveLoan, "authorized");
+        String authorizedField = taskApproveLoan.getElementValues().get("authorized").getValueAsString();
 
         TaskResource taskNotification;
-        if (authorizedField.getCode().equals("OK")) {
+        if (authorizedField.equals("OK")) {
             taskNotification = this.createTaskNotificationGranted(data);
         } else {
             taskNotification = this.createTaskNotificationRejection(data);
@@ -119,8 +113,8 @@ public class SampleRestWorkerLoanController {
     private void handleTaskLoanApplication(WebhookEventTaskStateChangedDataResource data) {
         TaskResource taskLoanApplication = this.taskApi.retrieveTask(data.getTaskId());
 
-        ElementValueDecisionResource currencyField = this.retrieveElementDecision(taskLoanApplication, "currency");
-        ElementValueFieldResource amountField = this.retrieveElementValue(taskLoanApplication, "amount");
+        String currencyField = taskLoanApplication.getElementValues().get("currency").getValueAsString();
+        String amountField = taskLoanApplication.getElementValues().get("amount").getValueAsString();
 
         BigDecimal amountEUR = this.convertToEuros(currencyField, amountField);
 
@@ -149,27 +143,17 @@ public class SampleRestWorkerLoanController {
     }
 
     private void createTaskApproveLoan(TaskResource taskLoanApplication, BigDecimal amountEUR) {
-        ElementValueFieldResource firstNameField = this.retrieveElementValue(taskLoanApplication, "firstName");
-        ElementValueFieldResource lastNameField = this.retrieveElementValue(taskLoanApplication, "lastName");
+        String firstName = taskLoanApplication.getElementValues().get("firstName").getValueAsString();
+        String lastName = taskLoanApplication.getElementValues().get("lastName").getValueAsString();
 
         TasksDefinitionSummaryResource tasksDefinition = new TasksDefinitionSummaryResource();
         tasksDefinition.setCode(TASK_APPROVE_LOAN);
 
-        ElementValueFieldResource nameField = new ElementValueFieldResource();
-        nameField.setElementDefinitionType(ElementDefinitionTypeResource.FIELD);
-        nameField.setElementDefinitionCode("name");
-        nameField.setValue(firstNameField.getValue() + " " + lastNameField.getValue());
-
-        ElementValueFieldResource amountRequestedField = new ElementValueFieldResource();
-        amountRequestedField.setElementDefinitionType(ElementDefinitionTypeResource.FIELD);
-        amountRequestedField.setElementDefinitionCode("amountRequested");
-        amountRequestedField.setValue(amountEUR.toPlainString());
-
         TaskResource taskApproveLoan = new TaskResource();
         taskApproveLoan.setProcessId(taskLoanApplication.getProcessId());
         taskApproveLoan.setTaskDefinition(tasksDefinition);
-        taskApproveLoan.addElementValuesItem(nameField);
-        taskApproveLoan.addElementValuesItem(amountRequestedField);
+        taskApproveLoan.putElementValuesItem("name", TaskElementValueWrapperResource.of(firstName + " " + lastName));
+        taskApproveLoan.putElementValuesItem("amountRequested", TaskElementValueWrapperResource.of(amountEUR.toPlainString()));
 
         this.taskApi.createTask(taskApproveLoan);
     }
@@ -203,20 +187,20 @@ public class SampleRestWorkerLoanController {
         this.taskApi.actionsAssignTask(taskNotification.getId(), command);
     }
 
-    private ElementValueDecisionResource retrieveElementDecision(TaskResource taskLoanApplication, String code) {
-        return ElementUtils.getSingleValueByCode(taskLoanApplication, code, ElementValueDecisionResource.class);
-    }
+    // private ElementValueDecisionResource retrieveElementDecision(TaskResource taskLoanApplication, String code) {
+    //     return ElementUtils.getSingleValueByCode(taskLoanApplication, code, ElementValueDecisionResource.class);
+    // }
 
-    private ElementValueFieldResource retrieveElementValue(TaskResource taskLoanApplication, String code) {
-        return ElementUtils.getSingleValueByCode(taskLoanApplication, code, ElementValueFieldResource.class);
-    }
+    // private ElementValueFieldResource retrieveElementValue(TaskResource taskLoanApplication, String code) {
+    //     return ElementUtils.getSingleValueByCode(taskLoanApplication, code, ElementValueFieldResource.class);
+    // }
 
-    private BigDecimal convertToEuros(ElementValueDecisionResource currencyField, ElementValueFieldResource amountField) {
-        BigDecimal amount = new BigDecimal(amountField.getValue() != null ? amountField.getValue() : "0");
-        if (currencyField.getCode().equals("EUR")) {
-            return amount;
+    private BigDecimal convertToEuros(String currencyField, String amountField) {
+        BigDecimal amountEUR = new BigDecimal(amountField != null ? amountField : "0");
+        if (currencyField.equals("EUR")) {
+            return amountEUR;
         } else {
-            return this.convert(amount, currencyField.getCode(), "EUR");
+            return this.convert(amountEUR, currencyField, "EUR");
         }
     }
 
