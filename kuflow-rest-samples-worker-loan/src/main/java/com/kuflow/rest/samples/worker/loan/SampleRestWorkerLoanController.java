@@ -187,14 +187,6 @@ public class SampleRestWorkerLoanController {
         this.taskApi.actionsAssignTask(taskNotification.getId(), command);
     }
 
-    // private ElementValueDecisionResource retrieveElementDecision(TaskResource taskLoanApplication, String code) {
-    //     return ElementUtils.getSingleValueByCode(taskLoanApplication, code, ElementValueDecisionResource.class);
-    // }
-
-    // private ElementValueFieldResource retrieveElementValue(TaskResource taskLoanApplication, String code) {
-    //     return ElementUtils.getSingleValueByCode(taskLoanApplication, code, ElementValueFieldResource.class);
-    // }
-
     private BigDecimal convertToEuros(String currencyField, String amountField) {
         BigDecimal amountEUR = new BigDecimal(amountField != null ? amountField : "0");
         if (currencyField.equals("EUR")) {
