@@ -5,7 +5,7 @@
 application:
   # NOTE that the endpoint is the KUFLOW LIVE environment for
   # the KUFLOW REST API.
-  endpoint: https://api.kuflow.com/v1
+  endpoint: https://api.kuflow.com/v1.0
 
   # ID of the APPLICATION configured in KUFLOW.
   # Get it in "Application details" in the Kuflow APP.
@@ -14,4 +14,3 @@ application:
   # TOKEN of the APPLICATION configured in KUFLOW.
   # Get it in "Application details" in the Kuflow APP.
   token: FILL_ME
-
